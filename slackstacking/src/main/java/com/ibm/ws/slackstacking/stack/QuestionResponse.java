@@ -1,4 +1,4 @@
-package com.ibm.ws.slackstacking;
+package com.ibm.ws.slackstacking.stack;
 
 import java.util.List;
 

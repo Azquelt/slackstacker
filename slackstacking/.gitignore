@@ -3,3 +3,4 @@
 /.gradle
 /bin
 /.settings
+/slackstacker.state
