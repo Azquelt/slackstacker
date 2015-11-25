@@ -10,10 +10,12 @@ import java.util.TimeZone;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status.Family;
 
 import org.apache.cxf.transport.common.gzip.GZIPFeature;
 
@@ -22,6 +24,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import com.ibm.ws.slackstacking.slack.SlackMessage;
 import com.ibm.ws.slackstacking.stack.Question;
 import com.ibm.ws.slackstacking.stack.QuestionResponse;
 
@@ -29,17 +32,25 @@ public class SlackStacker {
 	
 	private static ObjectMapper stateMapper;
 	private static final File STATE_FILE = new File("slackstacker.state");
+	private static final File CONFIG_FILE = new File("slackstacker.config");
+	
+	private static Client client = ClientBuilder.newBuilder()
+			.register(JacksonJsonProvider.class) // Allow us to serialise JSON <-> POJO
+			.register(GZIPFeature.class) // Allow us to understand GZIP compressed pages
+			.build();
 
 	public static void main(String[] args) throws IOException {
 		
 		stateMapper = new ObjectMapper();
+		
+		Config config = loadConfig();
 		
 		State oldState = loadState();
 		Calendar now = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
 		if (oldState != null) {
 			List<Question> questions = getQuestions();
 			List<Question> newQuestions = filterOldQuestions(questions, oldState.lastUpdated, oldState.idsSeen);
-			postQuestions(newQuestions);
+			postQuestions(newQuestions, config.slackWebhookUrl);
 			State newState = createNewState(now, questions);
 			saveState(newState);
 		} else {
@@ -71,12 +82,30 @@ public class SlackStacker {
 		return newState;
 	}
 
-	private static void postQuestions(List<Question> newQuestions) {
-		// TODO: Just print for now
+	private static void postQuestions(List<Question> newQuestions, String webhookUrl) throws IOException {
+		if (newQuestions.size() == 0) {
+			return; //Nothing to post!
+		}
+		
+		StringBuilder b = new StringBuilder("New stack overflow questions:\n");
+		
 		for (Question question : newQuestions) {
-			System.out.println(question.title);
-			System.out.println(question.link);
-			System.out.println();
+			b.append("<");
+			b.append(question.link);
+			b.append("|");
+			b.append(question.title);
+			b.append(">\n");
+		}
+		
+		SlackMessage message = new SlackMessage();
+		message.text = b.toString();
+		
+		WebTarget target = client.target(webhookUrl);
+		Invocation.Builder builder = target.request();
+
+		Response resp = builder.post(Entity.entity(message, MediaType.APPLICATION_JSON_TYPE));
+		if (resp.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+			throw new IOException("Error posting questions to slack: " + resp.getStatusInfo().getReasonPhrase());
 		}
 	}
 
@@ -92,11 +121,6 @@ public class SlackStacker {
 	}
 
 	private static List<Question> getQuestions() throws IOException {
-		Client client = ClientBuilder.newBuilder()
-				.register(JacksonJsonProvider.class) // Allow us to serialise JSON <-> POJO
-				.register(GZIPFeature.class) // Allow us to understand GZIP compressed pages
-				.build();
-		
 		WebTarget target = client.target("http://api.stackexchange.com/2.2");
 		WebTarget questionTarget = target.path("questions")
 				.queryParam("order", "desc")
@@ -127,6 +151,14 @@ public class SlackStacker {
 		}
 		
 		return state;
+	}
+	
+	private static Config loadConfig() throws JsonProcessingException, IOException {
+		Config config = null;
+		if (CONFIG_FILE.exists()) {
+			config = stateMapper.readerFor(Config.class).readValue(CONFIG_FILE);
+		}
+		return config;
 	}
 	
 }
