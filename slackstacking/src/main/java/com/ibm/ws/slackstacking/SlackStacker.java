@@ -48,7 +48,7 @@ public class SlackStacker {
 		State oldState = loadState();
 		Calendar now = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
 		if (oldState != null) {
-			List<Question> questions = getQuestions();
+			List<Question> questions = getQuestions(config.tags);
 			List<Question> newQuestions = filterOldQuestions(questions, oldState.lastUpdated, oldState.idsSeen);
 			postQuestions(newQuestions, config.slackWebhookUrl);
 			State newState = createNewState(now, questions);
@@ -120,12 +120,14 @@ public class SlackStacker {
 		return newQuestions;
 	}
 
-	private static List<Question> getQuestions() throws IOException {
+	private static List<Question> getQuestions(List<String> tags) throws IOException {
+		
 		WebTarget target = client.target("http://api.stackexchange.com/2.2");
-		WebTarget questionTarget = target.path("questions")
+		WebTarget questionTarget = target.path("search")
 				.queryParam("order", "desc")
 				.queryParam("sort", "creation")
-				.queryParam("site", "stackoverflow");
+				.queryParam("site", "stackoverflow")
+				.queryParam("tagged", joinTags(tags));
 		
 		Invocation.Builder builder = questionTarget.request();
 		builder.accept(MediaType.APPLICATION_JSON);
@@ -141,6 +143,24 @@ public class SlackStacker {
 			String string = response.readEntity(String.class);
 			throw new IOException("Getting questions failed. RC: " + response.getStatus() + " Response: " + string);
 		}
+	}
+	
+	/**
+	 * Joins a list of tags into a semi-colon separated string
+	 */
+	private static String joinTags(List<String> tags) {
+		StringBuilder sb = new StringBuilder();
+		
+		boolean first = true;
+		for (String tag : tags) {
+			if (!first) {
+				sb.append(";");
+			}
+			first = false;
+			sb.append(tag);
+		}
+		
+		return sb.toString();
 	}
 
 	private static State loadState() throws JsonProcessingException, IOException {
