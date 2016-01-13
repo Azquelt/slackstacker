@@ -87,7 +87,7 @@ public class SlackStacker {
 			return; //Nothing to post!
 		}
 		
-		StringBuilder b = new StringBuilder("New stack overflow questions:\n");
+		StringBuilder b = new StringBuilder();
 		
 		for (Question question : newQuestions) {
 			b.append("<");
