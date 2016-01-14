@@ -1,4 +1,4 @@
-package com.ibm.ws.slackstacking.stack;
+package uk.co.azquelt.slackstacker.stack;
 
 import java.util.Calendar;
 

@@ -1,4 +1,4 @@
-package com.ibm.ws.slackstacking.slack;
+package uk.co.azquelt.slackstacker.slack;
 
 public class SlackMessage {
 	

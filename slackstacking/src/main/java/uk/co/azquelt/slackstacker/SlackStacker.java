@@ -1,4 +1,4 @@
-package com.ibm.ws.slackstacking;
+package uk.co.azquelt.slackstacker;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,9 +24,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import com.ibm.ws.slackstacking.slack.SlackMessage;
-import com.ibm.ws.slackstacking.stack.Question;
-import com.ibm.ws.slackstacking.stack.QuestionResponse;
+
+import uk.co.azquelt.slackstacker.slack.SlackMessage;
+import uk.co.azquelt.slackstacker.stack.Question;
+import uk.co.azquelt.slackstacker.stack.QuestionResponse;
 
 public class SlackStacker {
 	
