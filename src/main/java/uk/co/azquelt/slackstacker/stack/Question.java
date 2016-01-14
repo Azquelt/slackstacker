@@ -16,4 +16,7 @@ public class Question {
 	
 	@JsonDeserialize(using=StackDateDeserializer.class)
 	public Calendar creation_date;
+	
+	@JsonDeserialize(using=StackDateDeserializer.class)
+	public Calendar last_activity_date;
 }

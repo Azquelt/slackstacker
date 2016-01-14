@@ -114,7 +114,7 @@ public class SlackStacker {
 		
 		List<Question> newQuestions = new ArrayList<>();
 		for (Question question : questions) {
-			if (!question.creation_date.before(lastUpdated) && !idsSeen.contains(question.question_id)) {
+			if (!question.last_activity_date.before(lastUpdated) && !idsSeen.contains(question.question_id)) {
 				newQuestions.add(question);
 			}
 		}
