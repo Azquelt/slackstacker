@@ -93,18 +93,7 @@ public class SlackStacker {
 			return; //Nothing to post!
 		}
 		
-		StringBuilder b = new StringBuilder();
-		
-		for (Question question : newQuestions) {
-			b.append("<");
-			b.append(question.link);
-			b.append("|");
-			b.append(question.title);
-			b.append(">\n");
-		}
-		
-		SlackMessage message = new SlackMessage();
-		message.text = b.toString();
+		SlackMessage message = MessageBuilder.buildMessage(newQuestions);
 		
 		WebTarget target = client.target(webhookUrl);
 		Invocation.Builder builder = target.request();
