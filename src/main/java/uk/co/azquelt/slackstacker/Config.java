@@ -10,5 +10,8 @@ public class Config {
 	
 	@JsonProperty("slack-webhook-url")
 	public String slackWebhookUrl;
+	
+	@JsonProperty("state-file")
+	public String stateFile;
 
 }

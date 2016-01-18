@@ -32,8 +32,6 @@ import uk.co.azquelt.slackstacker.stack.QuestionResponse;
 public class SlackStacker {
 	
 	private static ObjectMapper stateMapper;
-	private static final File STATE_FILE = new File("slackstacker.state");
-	private static final File CONFIG_FILE = new File("slackstacker.config");
 	
 	private static Client client = ClientBuilder.newBuilder()
 			.register(JacksonJsonProvider.class) // Allow us to serialise JSON <-> POJO
@@ -42,28 +40,35 @@ public class SlackStacker {
 
 	public static void main(String[] args) throws IOException {
 		
-		stateMapper = new ObjectMapper();
-		
-		Config config = loadConfig();
-		
-		State oldState = loadState();
-		Calendar now = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-		if (oldState != null) {
-			List<Question> questions = getQuestions(config.tags);
-			List<Question> newQuestions = filterOldQuestions(questions, oldState.lastUpdated, oldState.idsSeen);
-			postQuestions(newQuestions, config.slackWebhookUrl);
-			State newState = createNewState(now, questions);
-			saveState(newState);
-		} else {
-			System.out.println("No pre-existing state, setting up default state file");
-			State newState = createDefaultState(now);
-			saveState(newState);
+		try {
+			stateMapper = new ObjectMapper();
+			
+			CommandLine arguments = CommandLine.processArgs(args);
+			
+			Config config = loadConfig(arguments.getConfigFile());
+			
+			State oldState = loadState(config.stateFile);
+			Calendar now = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+			if (oldState != null) {
+				List<Question> questions = getQuestions(config.tags);
+				List<Question> newQuestions = filterOldQuestions(questions, oldState.lastUpdated, oldState.idsSeen);
+				postQuestions(newQuestions, config.slackWebhookUrl);
+				State newState = createNewState(now, questions);
+				saveState(newState, config.stateFile);
+			} else {
+				System.out.println("No pre-existing state, setting up default state file");
+				State newState = createDefaultState(now);
+				saveState(newState, config.stateFile);
+			}
+		} catch (InvalidArgumentException e) {
+			System.err.println(e.getMessage());
 		}
 		
 	}
 
-	private static void saveState(State newState) throws JsonGenerationException, JsonMappingException, IOException {
-		stateMapper.writerWithDefaultPrettyPrinter().forType(State.class).writeValue(STATE_FILE, newState);
+	private static void saveState(State newState, String stateFileName) throws JsonGenerationException, JsonMappingException, IOException {
+		File stateFile = new File(stateFileName);
+		stateMapper.writerWithDefaultPrettyPrinter().forType(State.class).writeValue(stateFile, newState);
 	}
 	
 	private static State createDefaultState(Calendar now) {
@@ -164,21 +169,33 @@ public class SlackStacker {
 		return sb.toString();
 	}
 
-	private static State loadState() throws JsonProcessingException, IOException {
+	private static State loadState(String stateFileName) throws JsonProcessingException, IOException, InvalidArgumentException {
+		if (stateFileName == null) {
+			throw new InvalidArgumentException("State file location is not set in config file");
+		}
+		
+		File stateFile = new File(stateFileName);
+		
 		State state = null;
 		
-		if (STATE_FILE.exists()) {
-			state = stateMapper.readerFor(State.class).readValue(STATE_FILE);
+		if (stateFile.exists()) {
+			state = stateMapper.readerFor(State.class).readValue(stateFile);
 		}
 		
 		return state;
 	}
 	
-	private static Config loadConfig() throws JsonProcessingException, IOException {
-		Config config = null;
-		if (CONFIG_FILE.exists()) {
-			config = stateMapper.readerFor(Config.class).readValue(CONFIG_FILE);
+	private static Config loadConfig(File configFile) throws JsonProcessingException, IOException, InvalidArgumentException {
+		if (configFile == null) {
+			throw new InvalidArgumentException("Config file is not set");
 		}
+		
+		if (!configFile.exists()) {
+			throw new InvalidArgumentException("Config file [" + configFile + "] does not exist");
+		}
+		
+		Config config = stateMapper.readerFor(Config.class).readValue(configFile);
+		
 		return config;
 	}
 	
