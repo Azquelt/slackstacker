@@ -106,9 +106,14 @@ public class SlackStacker {
 
 	private static List<Question> filterOldQuestions(List<Question> questions, Calendar lastUpdated, List<String> idsSeen) {
 		
+		// Sometimes questions don't appear in the API immediately
+		// Add an additional 30 minutes of leeway
+		Calendar cutoffTime = (Calendar) lastUpdated.clone();
+		cutoffTime.add(Calendar.MINUTE, -30);
+		
 		List<Question> newQuestions = new ArrayList<>();
 		for (Question question : questions) {
-			if (!question.last_activity_date.before(lastUpdated) && !idsSeen.contains(question.question_id)) {
+			if (!question.last_activity_date.before(cutoffTime) && !idsSeen.contains(question.question_id)) {
 				newQuestions.add(question);
 			}
 		}
