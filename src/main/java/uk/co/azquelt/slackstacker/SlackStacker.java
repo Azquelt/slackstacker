@@ -1,6 +1,7 @@
 package uk.co.azquelt.slackstacker;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -25,13 +26,16 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 
+import uk.co.azquelt.slackstacker.files.State;
+import uk.co.azquelt.slackstacker.files.StateReader;
 import uk.co.azquelt.slackstacker.slack.SlackMessage;
 import uk.co.azquelt.slackstacker.stack.Question;
 import uk.co.azquelt.slackstacker.stack.QuestionResponse;
 
 public class SlackStacker {
 	
-	private static ObjectMapper stateMapper;
+	private static ObjectMapper objectMapper;
+	private static StateReader stateReader;
 	
 	private static Client client = ClientBuilder.newBuilder()
 			.register(JacksonJsonProvider.class) // Allow us to serialise JSON <-> POJO
@@ -41,7 +45,8 @@ public class SlackStacker {
 	public static void main(String[] args) throws IOException {
 		
 		try {
-			stateMapper = new ObjectMapper();
+			objectMapper = new ObjectMapper();
+			stateReader = new StateReader(objectMapper);
 			
 			CommandLine arguments = CommandLine.processArgs(args);
 			
@@ -81,7 +86,7 @@ public class SlackStacker {
 
 	private static void saveState(State newState, String stateFileName) throws JsonGenerationException, JsonMappingException, IOException {
 		File stateFile = new File(stateFileName);
-		stateMapper.writerWithDefaultPrettyPrinter().forType(State.class).writeValue(stateFile, newState);
+		stateReader.write(new FileOutputStream(stateFile), newState);
 	}
 	
 	private static State createDefaultState(Calendar now) {
@@ -186,7 +191,7 @@ public class SlackStacker {
 		State state = null;
 		
 		if (stateFile.exists()) {
-			state = stateMapper.readerFor(State.class).readValue(stateFile);
+			state = stateReader.read(stateFile);
 		}
 		
 		return state;
@@ -201,7 +206,7 @@ public class SlackStacker {
 			throw new InvalidArgumentException("Config file [" + configFile + "] does not exist");
 		}
 		
-		Config config = stateMapper.readerFor(Config.class).readValue(configFile);
+		Config config = objectMapper.readerFor(Config.class).readValue(configFile);
 		
 		return config;
 	}

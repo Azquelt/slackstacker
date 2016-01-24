@@ -1,9 +1,11 @@
-package uk.co.azquelt.slackstacker;
+package uk.co.azquelt.slackstacker.files;
 
 import java.util.Calendar;
 import java.util.List;
 
-public class State {
+import uk.co.azquelt.slackstacker.versionedFile.VersionedFormat;
+
+public class State extends VersionedFormat {
 	
 	/**
 	 * The time that we last successfully retrieved and posted questions
