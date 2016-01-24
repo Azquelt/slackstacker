@@ -1,24 +1,11 @@
 package uk.co.azquelt.slackstacker.versionedFile;
 
-import java.io.File;
-import java.io.IOException;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-
 /**
- * Responsible for reading a specific version of a versioned data format and upgrading it to a newer version.
+ * Responsible for upgrading a specific version of a file to a newer version.
  * 
  * @param <T> The class which corresponds to the version of the data format which this processor can read
  */
 abstract public class VersionedFormatProcessor <T extends VersionedFormat> {
-	
-	protected ObjectMapper mapper;
-	
-	protected VersionedFormatProcessor(ObjectMapper mapper) {
-		this.mapper = mapper;
-	}
 	
 	/**
 	 * @return the version of the versioned format that this processor can read and upgrade
@@ -36,26 +23,12 @@ abstract public class VersionedFormatProcessor <T extends VersionedFormat> {
 	/**
 	 * Returns the data type understood by this processor
 	 * <p>
-	 * This must match <code>&lt;T></code>
+	 * This must match <code>&lt;T></code> and correspond to the value returned by {@link #getVersionNumber()}
 	 * 
 	 * @return the data class
 	 */
 	public abstract Class<T> getDataClass();
 
-	/**
-	 * Read a versioned file.
-	 * <p>
-	 * This method will return a subclass of VersionedFile which corresponds to the version of the file which was read.
-	 * 
-	 * @param file the file to read from
-	 * @return the data from the versioned file
-	 * @throws IOException if a problem was encountered reading the file
-	 * @throws JsonProcessingException if a problem was encountered parsing the file
-	 */
-	public VersionedFormat readFile(File file) throws JsonProcessingException, IOException {
-		return mapper.readerFor(getDataClass()).readValue(file);
-	}
-	
 	/**
 	 * Upgrades a VersionedFormat object to a newer format with a higher version number.
 	 * <p>
