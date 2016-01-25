@@ -17,4 +17,8 @@ public class QuestionResponse {
 		this.items = items;
 	}
 	
+	public int backoff = 0;
+	
+	public int quota_remaining;
+	
 }

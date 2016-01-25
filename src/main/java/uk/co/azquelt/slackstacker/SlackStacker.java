@@ -49,11 +49,24 @@ public class SlackStacker {
 			
 			State oldState = loadState(config.stateFile);
 			Calendar now = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+			
 			if (oldState != null) {
-				List<Question> questions = getQuestions(config.tags);
-				List<Question> newQuestions = filterOldQuestions(questions, oldState.lastUpdated, oldState.idsSeen);
+				
+				if (oldState.backoffUntil != null && now.before(oldState.backoffUntil)) {
+					// We've been asked by the StackExchange API to back off, don't run
+					return;
+				}
+				
+				QuestionResponse questions = getQuestions(config.tags);
+				List<Question> newQuestions = filterOldQuestions(questions.items, oldState.lastUpdated, oldState.idsSeen);
 				postQuestions(newQuestions, config.slackWebhookUrl);
-				State newState = createNewState(now, questions);
+				
+				State newState = createNewState(now, questions.items);
+				if (questions.backoff > 0) {
+					Calendar backoffUntil = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+					backoffUntil.add(Calendar.SECOND, questions.backoff);
+					newState.backoffUntil = backoffUntil;
+				}
 				saveState(newState, config.stateFile);
 			} else {
 				System.out.println("No pre-existing state, setting up default state file");
@@ -120,7 +133,7 @@ public class SlackStacker {
 		return newQuestions;
 	}
 
-	private static List<Question> getQuestions(List<String> tags) throws IOException {
+	private static QuestionResponse getQuestions(List<String> tags) throws IOException {
 		
 		WebTarget target = client.target("http://api.stackexchange.com/2.2");
 		WebTarget questionTarget = target.path("search")
@@ -136,8 +149,8 @@ public class SlackStacker {
 		Response response = builder.get();
 		
 		if (response.getStatus() == 200) {
-			QuestionResponse questions = response.readEntity(QuestionResponse.class);
-			return questions.getItems();
+			QuestionResponse questionResponse = response.readEntity(QuestionResponse.class);
+			return questionResponse;
 		} else {
 			System.out.println("Response: " + response.getStatus());
 			String string = response.readEntity(String.class);
