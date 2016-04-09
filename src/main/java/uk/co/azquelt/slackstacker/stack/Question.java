@@ -22,4 +22,9 @@ public class Question {
 	
 	@JsonDeserialize(using=StackDateDeserializer.class)
 	public Calendar last_activity_date;
+
+	@Override
+	public String toString() {
+		return "Question(" + question_id + ")";
+	}
 }

@@ -24,4 +24,5 @@ dependencies {
     compile 'org.apache.cxf:cxf-rt-rs-client:3.0.+'
     
     testCompile 'junit:junit:4.+'
+    testCompile 'org.hamcrest:hamcrest-all:1.+'
 }

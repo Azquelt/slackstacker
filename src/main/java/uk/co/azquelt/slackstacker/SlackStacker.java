@@ -2,9 +2,7 @@ package uk.co.azquelt.slackstacker;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.List;
 import java.util.TimeZone;
 
@@ -37,6 +35,8 @@ public class SlackStacker {
 			.register(JacksonJsonProvider.class) // Allow us to serialise JSON <-> POJO
 			.register(GZIPFeature.class) // Allow us to understand GZIP compressed pages
 			.build();
+	
+	private static QuestionManager questionManager = new QuestionManager();
 
 	public static void main(String[] args) throws IOException {
 		
@@ -58,10 +58,11 @@ public class SlackStacker {
 				}
 				
 				QuestionResponse questions = getQuestions(config.tags);
-				List<Question> newQuestions = filterOldQuestions(questions.items, oldState.lastUpdated, oldState.idsSeen);
+				List<Question> newQuestions = questionManager.filterQuestions(questions.items, oldState);
 				postQuestions(newQuestions, config.slackWebhookUrl);
 				
-				State newState = createNewState(now, questions.items);
+				State newState = questionManager.computeNewState(questions.items, oldState);
+				
 				if (questions.backoff > 0) {
 					Calendar backoffUntil = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
 					backoffUntil.add(Calendar.SECOND, questions.backoff);
@@ -70,7 +71,7 @@ public class SlackStacker {
 				saveState(newState, config.stateFile);
 			} else {
 				System.out.println("No pre-existing state, setting up default state file");
-				State newState = createDefaultState(now);
+				State newState = questionManager.createDefaultState(now);
 				saveState(newState, config.stateFile);
 			}
 		} catch (InvalidArgumentException e) {
@@ -84,23 +85,6 @@ public class SlackStacker {
 		stateMapper.writerWithDefaultPrettyPrinter().forType(State.class).writeValue(stateFile, newState);
 	}
 	
-	private static State createDefaultState(Calendar now) {
-		State newState = new State();
-		newState.lastUpdated = now;
-		newState.idsSeen = Collections.emptyList();
-		return newState;
-	}
-
-	private static State createNewState(Calendar now, List<Question> questions) {
-		State newState = new State();
-		newState.lastUpdated = now;
-		newState.idsSeen = new ArrayList<>();
-		for (Question question : questions) {
-			newState.idsSeen.add(question.question_id);
-		}
-		return newState;
-	}
-
 	private static void postQuestions(List<Question> newQuestions, String webhookUrl) throws IOException {
 		if (newQuestions.size() == 0) {
 			return; //Nothing to post!
@@ -115,22 +99,6 @@ public class SlackStacker {
 		if (resp.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 			throw new IOException("Error posting questions to slack: " + resp.getStatusInfo().getReasonPhrase());
 		}
-	}
-
-	private static List<Question> filterOldQuestions(List<Question> questions, Calendar lastUpdated, List<String> idsSeen) {
-		
-		// Sometimes questions don't appear in the API immediately
-		// Add an additional 30 minutes of leeway
-		Calendar cutoffTime = (Calendar) lastUpdated.clone();
-		cutoffTime.add(Calendar.MINUTE, -30);
-		
-		List<Question> newQuestions = new ArrayList<>();
-		for (Question question : questions) {
-			if (!question.last_activity_date.before(cutoffTime) && !idsSeen.contains(question.question_id)) {
-				newQuestions.add(question);
-			}
-		}
-		return newQuestions;
 	}
 
 	private static QuestionResponse getQuestions(List<String> tags) throws IOException {

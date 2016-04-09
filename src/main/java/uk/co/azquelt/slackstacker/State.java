@@ -1,23 +1,28 @@
 package uk.co.azquelt.slackstacker;
 
 import java.util.Calendar;
-import java.util.List;
+import java.util.Map;
 
 public class State {
 	
 	/**
-	 * The time that we last successfully retrieved and posted questions
+	 * The cutoff time for remembering which questions we have seen.
+	 * <p>
+	 * We assume that we have seen any question which was created before this
+	 * time. For any question created after this time, we need to consult
+	 * {@link #questionsSeen}
 	 */
-	public Calendar lastUpdated;
+	public Calendar questionsSeenCutoff;
 	
 	/**
-	 * The IDs we saw last time we requested questions (to avoid posting the same ones twice if there's any overlap)
+	 * A map of ID to created date for all questions we have seen which were
+	 * created after the {@link #questionsSeenCutoff}
 	 */
-	public List<String> idsSeen;
+	public Map<String, Calendar> questionsSeen;
 	
 	/**
 	 * If we've been told to back off, this is the time we are next allowed to run again
 	 */
 	public Calendar backoffUntil;
-
+	
 }
