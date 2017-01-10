@@ -13,14 +13,12 @@ public class MessageBuilder {
 	/**
 	 * Builds a SlackMessage from a list of StackOverflow questions
 	 * 
-	 * @param questions a list of questions
-	 * @return a message which includes the given list of questions
+	 * @param question a question
+	 * @return a message which includes the given question
 	 */
-	public static SlackMessage buildMessage(List<Question> questions) {
+	public static SlackMessage buildMessage(Question question) {
 		StringBuilder sb = new StringBuilder();
-		for (Question question : questions) {
-			appendQuestion(sb, question);
-		}
+		appendQuestion(sb, question);
 		
 		SlackMessage message = new SlackMessage();
 		message.text = sb.toString();

@@ -106,14 +106,17 @@ public class SlackStacker {
 			return; //Nothing to post!
 		}
 		
-		SlackMessage message = MessageBuilder.buildMessage(newQuestions);
-		
 		WebTarget target = client.target(webhookUrl);
-		Invocation.Builder builder = target.request();
-
-		Response resp = builder.post(Entity.entity(message, MediaType.APPLICATION_JSON_TYPE));
-		if (resp.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-			throw new IOException("Error posting questions to slack: " + resp.getStatusInfo().getReasonPhrase());
+		
+		for (Question question : newQuestions) {
+			SlackMessage message = MessageBuilder.buildMessage(question);
+			
+			Invocation.Builder builder = target.request();
+	
+			Response resp = builder.post(Entity.entity(message, MediaType.APPLICATION_JSON_TYPE));
+			if (resp.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+				throw new IOException("Error posting questions to slack: " + resp.getStatusInfo().getReasonPhrase());
+			}
 		}
 	}
 
