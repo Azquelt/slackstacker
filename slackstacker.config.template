@@ -1,5 +1,8 @@
 {
-    "tags" : ["tag1", "tag2"],
+    "tags" : {
+        "stackoverflow" : ["tag1", "tag2"],
+        "serverfault" : ["tag1", "tag3"]
+    }
     "slack-webhook-url" : "my-incoming-webhook-url",
     "state-file" : "C:\slackstacker\slackstacker.state"
 }

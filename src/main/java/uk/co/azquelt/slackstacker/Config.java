@@ -1,12 +1,13 @@
 package uk.co.azquelt.slackstacker;
 
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class Config {
 	
-	public List<String> tags;
+	public Map<String, List<String>> tags;
 	
 	@JsonProperty("slack-webhook-url")
 	public String slackWebhookUrl;

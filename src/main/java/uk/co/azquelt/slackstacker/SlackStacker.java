@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 
 import javax.ws.rs.client.Client;
@@ -57,16 +58,23 @@ public class SlackStacker {
 					return;
 				}
 				
-				QuestionResponse questions = getQuestions(config.tags);
-				List<Question> newQuestions = filterOldQuestions(questions.items, oldState.lastUpdated, oldState.idsSeen);
-				postQuestions(newQuestions, config.slackWebhookUrl);
-				
-				State newState = createNewState(now, questions.items);
-				if (questions.backoff > 0) {
-					Calendar backoffUntil = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-					backoffUntil.add(Calendar.SECOND, questions.backoff);
-					newState.backoffUntil = backoffUntil;
+				State newState = createNewState(now);
+
+				for (Map.Entry<String, List<String>> entry : config.tags.entrySet()) {
+					QuestionResponse questions = getQuestions(entry.getKey(), entry.getValue());
+					List<Question> newQuestions = filterOldQuestions(questions.items, oldState.lastUpdated, oldState.idsSeen);
+					postQuestions(newQuestions, config.slackWebhookUrl);
+					addToState(newState, newQuestions);
+
+					if (questions.backoff > 0) {
+						Calendar backoffUntil = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+						backoffUntil.add(Calendar.SECOND, questions.backoff);
+						newState.backoffUntil = backoffUntil;
+						newState.idsSeen.addAll(oldState.idsSeen);
+						break;
+					}
 				}
+
 				saveState(newState, config.stateFile);
 			} else {
 				System.out.println("No pre-existing state, setting up default state file");
@@ -91,14 +99,17 @@ public class SlackStacker {
 		return newState;
 	}
 
-	private static State createNewState(Calendar now, List<Question> questions) {
+	private static State createNewState(Calendar now) {
 		State newState = new State();
 		newState.lastUpdated = now;
 		newState.idsSeen = new ArrayList<>();
-		for (Question question : questions) {
-			newState.idsSeen.add(question.question_id);
-		}
 		return newState;
+	}
+
+	private static void addToState(State state, List<Question> questions) {
+		for (Question question : questions) {
+			state.idsSeen.add(question.question_id);
+		}
 	}
 
 	private static void postQuestions(List<Question> newQuestions, String webhookUrl) throws IOException {
@@ -136,13 +147,13 @@ public class SlackStacker {
 		return newQuestions;
 	}
 
-	private static QuestionResponse getQuestions(List<String> tags) throws IOException {
+	private static QuestionResponse getQuestions(String site, List<String> tags) throws IOException {
 		
 		WebTarget target = client.target("http://api.stackexchange.com/2.2");
 		WebTarget questionTarget = target.path("search")
 				.queryParam("order", "desc")
 				.queryParam("sort", "creation")
-				.queryParam("site", "stackoverflow")
+				.queryParam("site", site)
 				.queryParam("tagged", joinTags(tags));
 		
 		Invocation.Builder builder = questionTarget.request();
