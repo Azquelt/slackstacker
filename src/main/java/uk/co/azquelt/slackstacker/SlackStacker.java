@@ -64,7 +64,7 @@ public class SlackStacker {
 					QuestionResponse questions = getQuestions(entry.getKey(), entry.getValue());
 					List<Question> newQuestions = filterOldQuestions(questions.items, oldState.lastUpdated, oldState.idsSeen);
 					postQuestions(newQuestions, config.slackWebhookUrl);
-					addToState(newState, newQuestions);
+					addToState(newState, questions.items);
 
 					if (questions.backoff > 0) {
 						Calendar backoffUntil = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
