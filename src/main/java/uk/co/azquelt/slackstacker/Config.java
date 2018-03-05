@@ -14,5 +14,8 @@ public class Config {
 	
 	@JsonProperty("state-file")
 	public String stateFile;
+	
+	@JsonProperty("stackoverflow-key")
+	public String stackoverflowKey;
 
 }

@@ -61,7 +61,7 @@ public class SlackStacker {
 				State newState = createNewState(now);
 
 				for (Map.Entry<String, List<String>> entry : config.tags.entrySet()) {
-					QuestionResponse questions = getQuestions(entry.getKey(), entry.getValue());
+					QuestionResponse questions = getQuestions(entry.getKey(), entry.getValue(), config.stackoverflowKey);
 					List<Question> newQuestions = filterOldQuestions(questions.items, oldState.lastUpdated, oldState.idsSeen);
 					postQuestions(newQuestions, config.slackWebhookUrl);
 					addToState(newState, questions.items);
@@ -147,7 +147,7 @@ public class SlackStacker {
 		return newQuestions;
 	}
 
-	private static QuestionResponse getQuestions(String site, List<String> tags) throws IOException {
+	private static QuestionResponse getQuestions(String site, List<String> tags, String apiKey) throws IOException {
 		
 		WebTarget target = client.target("http://api.stackexchange.com/2.2");
 		WebTarget questionTarget = target.path("search")
@@ -155,6 +155,10 @@ public class SlackStacker {
 				.queryParam("sort", "creation")
 				.queryParam("site", site)
 				.queryParam("tagged", joinTags(tags));
+		
+		if (apiKey != null) {
+		    questionTarget = questionTarget.queryParam("key", apiKey);
+		}
 		
 		Invocation.Builder builder = questionTarget.request();
 		builder.accept(MediaType.APPLICATION_JSON);
