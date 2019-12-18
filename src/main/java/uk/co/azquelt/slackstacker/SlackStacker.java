@@ -149,7 +149,7 @@ public class SlackStacker {
 
 	private static QuestionResponse getQuestions(String site, List<String> tags, String apiKey) throws IOException {
 		
-		WebTarget target = client.target("http://api.stackexchange.com/2.2");
+		WebTarget target = client.target("https://api.stackexchange.com/2.2");
 		WebTarget questionTarget = target.path("search")
 				.queryParam("order", "desc")
 				.queryParam("sort", "creation")
