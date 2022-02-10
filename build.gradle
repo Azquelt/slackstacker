@@ -21,7 +21,8 @@ mainClassName = "uk.co.azquelt.slackstacker.SlackStacker"
 // In this section you declare the dependencies for your production and test code
 dependencies {
     compile 'com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.6.3'
-    compile 'org.apache.cxf:cxf-rt-rs-client:3.0.+'
+    compile 'org.apache.cxf:cxf-rt-rs-client:3.5.0'
+    compile 'jakarta.xml.ws:jakarta.xml.ws-api:2.3.3'
     
     testCompile 'junit:junit:4.+'
 }
